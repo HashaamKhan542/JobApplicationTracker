@@ -4,19 +4,36 @@ import { getInterviewPrep, getFitScore } from '../api/client'
 // Parse fit score response into structured data
 function parseFitScore(text) {
   const scoreMatch = text.match(/Fit Score:\s*(\d+)/i)
-  const matchedMatch = text.match(/Matched Skills?:\s*([^\n]+)/i)
-  const gapsMatch = text.match(/Skill Gaps?:\s*([^\n]+)/i)
-  const recMatch = text.match(/Recommendation:\s*([\s\S]+?)(?=\n-\s|\n#|$)/i)
 
-  const parseList = (str) =>
-    str ? str.split(/,|;/).map(s => s.replace(/^\s*[-*]\s*/, '').trim()).filter(Boolean) : []
+  // Capture multi-line content until the next section header
+  const matchedMatch = text.match(/Matched Skills?:\s*([\s\S]*?)(?=\n\s*[-•*]\s*Skill Gaps?:|$)/i)
+  const gapsMatch = text.match(/Skill Gaps?:\s*([\s\S]*?)(?=\n\s*[-•*]\s*Recommendation:|$)/i)
+  const recMatch = text.match(/Recommendation:\s*([\s\S]+?)$/i)
+
+  const parseList = (str) => {
+    if (!str || !str.trim()) return []
+    return str
+      .split(/\n|,|;/)
+      .map(s => s.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim())
+      .filter(Boolean)
+  }
 
   return {
     score: scoreMatch ? parseInt(scoreMatch[1]) : null,
     matched: parseList(matchedMatch?.[1] || ''),
     gaps: parseList(gapsMatch?.[1] || ''),
-    recommendation: recMatch?.[1]?.trim() || '',
+    recommendation: (recMatch?.[1] || '').trim(),
   }
+}
+
+// Render inline bold (**text**) as <strong> elements
+function renderBold(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/)
+  return parts.map((part, i) =>
+    part.startsWith('**') && part.endsWith('**')
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : part
+  )
 }
 
 // Parse interview questions into categorised sections
@@ -98,7 +115,7 @@ function FitScoreResult({ text }) {
         {recommendation && (
           <div className="fit-recommendation">
             <p className="fit-rec-title">Recommendation</p>
-            <p className="fit-rec-text">{recommendation}</p>
+            <p className="fit-rec-text">{renderBold(recommendation)}</p>
           </div>
         )}
       </div>
