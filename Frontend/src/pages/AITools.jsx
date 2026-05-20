@@ -3,26 +3,37 @@ import { getInterviewPrep, getFitScore } from '../api/client'
 
 // Parse fit score response into structured data
 function parseFitScore(text) {
-  const scoreMatch = text.match(/Fit Score:\s*(\d+)/i)
+  // Handle score wrapped in bold markers e.g. **75** or plain 75
+  const scoreMatch = text.match(/Fit Score:\s*\*{0,2}(\d+)\*{0,2}/i)
+    || text.match(/Score:\s*\*{0,2}(\d+)\*{0,2}/i)
 
   // Capture multi-line content until the next section header
-  const matchedMatch = text.match(/Matched Skills?:\s*([\s\S]*?)(?=\n\s*[-•*]\s*Skill Gaps?:|$)/i)
-  const gapsMatch = text.match(/Skill Gaps?:\s*([\s\S]*?)(?=\n\s*[-•*]\s*Recommendation:|$)/i)
+  const matchedMatch = text.match(/Matched Skills?:\s*([\s\S]*?)(?=\n\s*[-•*]?\s*Skill Gaps?:|\n\s*Skill Gaps?:|$)/i)
+  const gapsMatch = text.match(/Skill Gaps?:\s*([\s\S]*?)(?=\n\s*[-•*]?\s*Recommendation:|\n\s*Recommendation:|$)/i)
   const recMatch = text.match(/Recommendation:\s*([\s\S]+?)$/i)
 
   const parseList = (str) => {
     if (!str || !str.trim()) return []
-    return str
-      .split(/\n|,|;/)
+    const lines = str.split('\n')
       .map(s => s.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim())
-      .filter(Boolean)
+      .filter(s => s && !/^[-*•]+$/.test(s))  // remove empty and lone bullet chars
+
+    if (lines.length > 1) return lines
+
+    // Single line — split by comma but not inside parentheses
+    return (lines[0] || '').split(/,(?![^(]*\))/)
+      .map(s => s.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim())
+      .filter(s => s && !/^[-*•]+$/.test(s))
   }
+
+  // Strip leading stray asterisks from recommendation
+  const rawRec = (recMatch?.[1] || '').trim().replace(/^\*+\s*/, '')
 
   return {
     score: scoreMatch ? parseInt(scoreMatch[1]) : null,
     matched: parseList(matchedMatch?.[1] || ''),
     gaps: parseList(gapsMatch?.[1] || ''),
-    recommendation: (recMatch?.[1] || '').trim(),
+    recommendation: rawRec,
   }
 }
 
@@ -32,7 +43,7 @@ function renderBold(text) {
   return parts.map((part, i) =>
     part.startsWith('**') && part.endsWith('**')
       ? <strong key={i}>{part.slice(2, -2)}</strong>
-      : part
+      : part.replace(/\*\*/g, '')  // strip any remaining unpaired **
   )
 }
 
