@@ -89,11 +89,13 @@ def fit_score(
 {candidate_profile}
 
 Given a job description, analyse how well this candidate fits the role.
-Return your response in this exact format:
-- Fit Score: (a number from 0 to 100)
-- Matched Skills: (list the matching skills)
-- Skill Gaps: (list what the candidate is missing)
-- Recommendation: (2 to 3 sentences summarising the fit)""",
+You MUST respond with valid JSON only — no markdown, no extra text, just the JSON object:
+{{
+  "score": <integer 0-100>,
+  "matched": ["skill1", "skill2"],
+  "gaps": ["gap1", "gap2"],
+  "recommendation": "2-3 sentence summary"
+}}""",
         messages=[
             {
                 "role": "user",
@@ -101,4 +103,20 @@ Return your response in this exact format:
             }
         ]
     )
-    return {"result": message.content[0].text}
+
+    raw = message.content[0].text.strip()
+    # Strip markdown code fences if Claude wraps the JSON
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    try:
+        parsed = json.loads(raw.strip())
+        return {
+            "score": int(parsed.get("score", 0)),
+            "matched": parsed.get("matched", []),
+            "gaps": parsed.get("gaps", []),
+            "recommendation": parsed.get("recommendation", ""),
+        }
+    except Exception:
+        return {"score": None, "matched": [], "gaps": [], "recommendation": raw}

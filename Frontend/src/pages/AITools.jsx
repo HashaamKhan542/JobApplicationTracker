@@ -99,8 +99,8 @@ function scoreColor(score) {
   return '#ef4444'
 }
 
-function FitScoreResult({ text }) {
-  const { score, matched, gaps, recommendation } = parseFitScore(text)
+function FitScoreResult({ data }) {
+  const { score, matched, gaps, recommendation } = data
   const color = scoreColor(score ?? 0)
   const pct = score ?? 0
 
@@ -226,7 +226,7 @@ function AITools() {
     setFitResult(null)
     try {
       const res = await getFitScore(jobDescription)
-      setFitResult(res.data.result)
+      setFitResult(res.data)
     } catch (e) {
       console.error(e)
     } finally {
@@ -310,7 +310,7 @@ function AITools() {
                 <div className="ai-result-header">
                   <h3>Fit Analysis</h3>
                 </div>
-                <FitScoreResult text={fitResult} />
+                <FitScoreResult data={fitResult} />
               </div>
             )}
           </div>
