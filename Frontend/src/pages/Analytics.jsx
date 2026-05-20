@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react'
 import { getAnalyticsSummary } from '../api/client'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
-const COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444']
+const STATUS_COLORS = {
+  Applied: '#3b82f6',
+  Interviewing: '#f59e0b',
+  Offer: '#10b981',
+  Rejected: '#ef4444'
+}
 
 function Analytics() {
   const [summary, setSummary] = useState(null)
@@ -79,7 +84,7 @@ function Analytics() {
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
               >
                 {pieData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name]} />   
                 ))}
               </Pie>
               <Tooltip />
