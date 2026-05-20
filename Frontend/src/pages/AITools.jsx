@@ -1,6 +1,176 @@
 import { useState } from 'react'
 import { getInterviewPrep, getFitScore } from '../api/client'
 
+// Parse fit score response into structured data
+function parseFitScore(text) {
+  const scoreMatch = text.match(/Fit Score:\s*(\d+)/i)
+  const matchedMatch = text.match(/Matched Skills?:\s*([^\n]+)/i)
+  const gapsMatch = text.match(/Skill Gaps?:\s*([^\n]+)/i)
+  const recMatch = text.match(/Recommendation:\s*([\s\S]+?)(?=\n-\s|\n#|$)/i)
+
+  const parseList = (str) =>
+    str ? str.split(/,|;/).map(s => s.replace(/^\s*[-*]\s*/, '').trim()).filter(Boolean) : []
+
+  return {
+    score: scoreMatch ? parseInt(scoreMatch[1]) : null,
+    matched: parseList(matchedMatch?.[1] || ''),
+    gaps: parseList(gapsMatch?.[1] || ''),
+    recommendation: recMatch?.[1]?.trim() || '',
+  }
+}
+
+// Parse interview questions into categorised sections
+function parseQuestions(text) {
+  const sections = []
+  const lines = text.split('\n')
+  let current = null
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    if (/^#{1,3}\s/.test(trimmed)) {
+      const title = trimmed.replace(/^#{1,3}\s*\*{0,2}/, '').replace(/\*{0,2}$/, '').trim()
+      if (title && !title.toLowerCase().includes('interview questions for')) {
+        current = { category: title, questions: [] }
+        sections.push(current)
+      }
+      continue
+    }
+
+    const qMatch = trimmed.match(/^\*{0,2}(\d+)\.\s+\*{0,2}(.+?)\*{0,2}$/)
+    if (qMatch && current) {
+      current.questions.push(qMatch[2].trim())
+      continue
+    }
+
+    if (trimmed.startsWith('**') && current) {
+      const clean = trimmed.replace(/\*\*/g, '').replace(/^\d+\.\s*/, '').trim()
+      if (clean) current.questions.push(clean)
+    }
+  }
+
+  return sections.filter(s => s.questions.length > 0)
+}
+
+const CATEGORY_COLORS = {
+  technical: { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  behavioural: { bg: '#f5f3ff', color: '#6d28d9', border: '#ddd6fe' },
+  behavioral: { bg: '#f5f3ff', color: '#6d28d9', border: '#ddd6fe' },
+  situational: { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
+}
+
+function categoryStyle(name) {
+  const key = name.toLowerCase().split(/\s+/)[0]
+  return CATEGORY_COLORS[key] || { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' }
+}
+
+function scoreColor(score) {
+  if (score >= 75) return '#10b981'
+  if (score >= 50) return '#f59e0b'
+  return '#ef4444'
+}
+
+function FitScoreResult({ text }) {
+  const { score, matched, gaps, recommendation } = parseFitScore(text)
+  const color = scoreColor(score ?? 0)
+  const pct = score ?? 0
+
+  return (
+    <div className="fit-result">
+      {/* Score Ring */}
+      <div className="fit-score-row">
+        <div className="score-ring-wrap">
+          <div
+            className="score-ring"
+            style={{ background: `conic-gradient(${color} ${pct * 3.6}deg, #e2e8f0 0deg)` }}
+          >
+            <div className="score-ring-inner">
+              <span className="score-number">{score ?? '–'}</span>
+              <span className="score-label">/ 100</span>
+            </div>
+          </div>
+          <p className="score-caption" style={{ color }}>
+            {pct >= 75 ? 'Strong Match' : pct >= 50 ? 'Moderate Match' : 'Weak Match'}
+          </p>
+        </div>
+
+        {recommendation && (
+          <div className="fit-recommendation">
+            <p className="fit-rec-title">Recommendation</p>
+            <p className="fit-rec-text">{recommendation}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Skills */}
+      <div className="fit-skills-grid">
+        {matched.length > 0 && (
+          <div className="fit-skill-section">
+            <p className="fit-skill-heading matched-heading">✓ Matched Skills</p>
+            <div className="fit-tags">
+              {matched.map(s => (
+                <span key={s} className="fit-tag fit-tag-matched">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {gaps.length > 0 && (
+          <div className="fit-skill-section">
+            <p className="fit-skill-heading gaps-heading">✗ Skill Gaps</p>
+            <div className="fit-tags">
+              {gaps.map(s => (
+                <span key={s} className="fit-tag fit-tag-gap">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function InterviewResult({ text }) {
+  const sections = parseQuestions(text)
+  if (!sections.length) {
+    return <pre className="result-text">{text}</pre>
+  }
+
+  return (
+    <div className="interview-result">
+      {sections.map((section, si) => {
+        const style = categoryStyle(section.category)
+        return (
+          <div key={si} className="interview-section">
+            <div className="interview-section-header">
+              <span
+                className="interview-category-badge"
+                style={{ background: style.bg, color: style.color, border: `1px solid ${style.border}` }}
+              >
+                {section.category}
+              </span>
+              <span className="interview-count">{section.questions.length} questions</span>
+            </div>
+            <div className="interview-questions">
+              {section.questions.map((q, qi) => (
+                <div key={qi} className="interview-question-card">
+                  <span
+                    className="q-number"
+                    style={{ background: style.bg, color: style.color }}
+                  >
+                    {qi + 1}
+                  </span>
+                  <p className="q-text">{q}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function AITools() {
   const [activeTab, setActiveTab] = useState('interview')
   const [jobDescription, setJobDescription] = useState('')
@@ -11,11 +181,12 @@ function AITools() {
   const handleInterviewPrep = async () => {
     if (!jobDescription.trim()) return
     setLoading(true)
+    setInterviewResult(null)
     try {
-      const response = await getInterviewPrep(jobDescription)
-      setInterviewResult(response.data.questions)
-    } catch (error) {
-      console.error('Error getting interview prep:', error)
+      const res = await getInterviewPrep(jobDescription)
+      setInterviewResult(res.data.questions)
+    } catch (e) {
+      console.error(e)
     } finally {
       setLoading(false)
     }
@@ -24,11 +195,12 @@ function AITools() {
   const handleFitScore = async () => {
     if (!jobDescription.trim()) return
     setLoading(true)
+    setFitResult(null)
     try {
-      const response = await getFitScore(jobDescription)
-      setFitResult(response.data.result)
-    } catch (error) {
-      console.error('Error getting fit score:', error)
+      const res = await getFitScore(jobDescription)
+      setFitResult(res.data.result)
+    } catch (e) {
+      console.error(e)
     } finally {
       setLoading(false)
     }
@@ -37,21 +209,20 @@ function AITools() {
   return (
     <div className="page">
       <div className="page-header">
-        <h2>AI Tools</h2>
+        <div>
+          <h2>AI Tools</h2>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+            Powered by Claude — tailored to your profile
+          </p>
+        </div>
       </div>
 
       <div className="tabs">
-        <button
-          className={activeTab === 'interview' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('interview')}
-        >
-          Interview Prep
+        <button className={activeTab === 'interview' ? 'tab active' : 'tab'} onClick={() => setActiveTab('interview')}>
+          🎤 Interview Prep
         </button>
-        <button
-          className={activeTab === 'fit' ? 'tab active' : 'tab'}
-          onClick={() => setActiveTab('fit')}
-        >
-          Fit Score
+        <button className={activeTab === 'fit' ? 'tab active' : 'tab'} onClick={() => setActiveTab('fit')}>
+          📊 Fit Score
         </button>
       </div>
 
@@ -61,24 +232,33 @@ function AITools() {
           <textarea
             placeholder="Paste the full job description here..."
             value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            rows={10}
+            onChange={e => setJobDescription(e.target.value)}
+            rows={9}
           />
         </div>
 
         {activeTab === 'interview' && (
           <div className="ai-section">
-            <button
-              className="btn-primary btn-full"
-              onClick={handleInterviewPrep}
-              disabled={loading}
-            >
-              {loading ? 'Generating...' : 'Generate Interview Questions'}
+            <button className="btn-primary btn-full" onClick={handleInterviewPrep} disabled={loading || !jobDescription.trim()}>
+              {loading ? '✨ Generating questions...' : 'Generate Interview Questions'}
             </button>
-            {interviewResult && (
+
+            {loading && (
+              <div className="ai-loading-card">
+                <div className="ai-spinner" />
+                <p>Analysing job description and generating tailored questions...</p>
+              </div>
+            )}
+
+            {interviewResult && !loading && (
               <div className="ai-result">
-                <h3>Interview Questions</h3>
-                <pre className="result-text">{interviewResult}</pre>
+                <div className="ai-result-header">
+                  <h3>Interview Questions</h3>
+                  <button className="btn-copy" onClick={() => navigator.clipboard.writeText(interviewResult)}>
+                    Copy all
+                  </button>
+                </div>
+                <InterviewResult text={interviewResult} />
               </div>
             )}
           </div>
@@ -86,17 +266,23 @@ function AITools() {
 
         {activeTab === 'fit' && (
           <div className="ai-section">
-            <button
-              className="btn-primary btn-full"
-              onClick={handleFitScore}
-              disabled={loading}
-            >
-              {loading ? 'Analysing...' : 'Analyse My Fit'}
+            <button className="btn-primary btn-full" onClick={handleFitScore} disabled={loading || !jobDescription.trim()}>
+              {loading ? '✨ Analysing fit...' : 'Analyse My Fit'}
             </button>
-            {fitResult && (
+
+            {loading && (
+              <div className="ai-loading-card">
+                <div className="ai-spinner" />
+                <p>Comparing your profile against the job requirements...</p>
+              </div>
+            )}
+
+            {fitResult && !loading && (
               <div className="ai-result">
-                <h3>Fit Analysis</h3>
-                <pre className="result-text">{fitResult}</pre>
+                <div className="ai-result-header">
+                  <h3>Fit Analysis</h3>
+                </div>
+                <FitScoreResult text={fitResult} />
               </div>
             )}
           </div>

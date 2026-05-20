@@ -19,7 +19,9 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <h1>JobTracker</h1>
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <h1>JobTracker</h1>
+        </Link>
       </div>
 
       {!isAuthPage && user && (
