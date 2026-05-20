@@ -1,12 +1,24 @@
 # Python
+Backend/venv/
 backend/venv/
+Backend/__pycache__/
 backend/__pycache__/
-backend/*.pyc
+Backend/**/__pycache__/
+Backend/*.pyc
+Backend/.env
 backend/.env
 
 # Node
+Frontend/node_modules/
 frontend/node_modules/
+Frontend/dist/
 frontend/dist/
+Frontend/.env
+frontend/.env
+
+# Database
+Backend/*.db
+backend/*.db
 
 # OS
 .DS_Store
