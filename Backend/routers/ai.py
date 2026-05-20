@@ -61,18 +61,25 @@ def interview_prep(
         max_tokens=1024,
         system="""You are an expert interview coach. Given a job description, generate 5 to 8 tailored interview questions.
 
-Organise them under ## section headers. Write each question as a complete, specific question — not a topic label.
-Do not prefix individual questions with the category name or any bold markers.
+You MUST respond with valid JSON only — no markdown, no extra text, just the JSON object:
+{
+  "sections": [
+    {
+      "category": "Technical Questions",
+      "questions": ["Full question text here?", "Another full question here?"]
+    },
+    {
+      "category": "Behavioural Questions",
+      "questions": ["Tell me about a time...?"]
+    },
+    {
+      "category": "Situational Questions",
+      "questions": ["You are given a situation where...?"]
+    }
+  ]
+}
 
-## Technical Questions
-1. How would you approach building a pipeline to process 10 million rows of sensor data daily?
-2. Walk me through how you would debug a model that performs well in training but poorly in production.
-
-## Behavioural Questions
-1. Tell me about a time you had to explain a technical concept to a non-technical stakeholder.
-
-## Situational Questions
-1. You are given a dataset with 40% missing values in a key column. How do you decide whether to impute or drop?""",
+Each question must be a complete sentence ending with a question mark. Do not use topic labels.""",
         messages=[
             {
                 "role": "user",
@@ -80,7 +87,17 @@ Do not prefix individual questions with the category name or any bold markers.
             }
         ]
     )
-    return {"questions": message.content[0].text}
+
+    raw = message.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    try:
+        parsed = json.loads(raw.strip())
+        return {"sections": parsed.get("sections", [])}
+    except Exception:
+        return {"sections": [], "raw": raw}
 
 
 @router.post("/fit-score")

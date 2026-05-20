@@ -163,11 +163,8 @@ function FitScoreResult({ data }) {
   )
 }
 
-function InterviewResult({ text }) {
-  const sections = parseQuestions(text)
-  if (!sections.length) {
-    return <pre className="result-text">{text}</pre>
-  }
+function InterviewResult({ sections }) {
+  if (!sections?.length) return null
 
   return (
     <div className="interview-result">
@@ -217,7 +214,7 @@ function AITools() {
     setInterviewResult(null)
     try {
       const res = await getInterviewPrep(jobDescription)
-      setInterviewResult(res.data.questions)
+      setInterviewResult(res.data.sections)
     } catch (e) {
       console.error(e)
     } finally {
@@ -287,11 +284,16 @@ function AITools() {
               <div className="ai-result">
                 <div className="ai-result-header">
                   <h3>Interview Questions</h3>
-                  <button className="btn-copy" onClick={() => navigator.clipboard.writeText(interviewResult)}>
+                  <button className="btn-copy" onClick={() => {
+                    const text = interviewResult.map(s =>
+                      `${s.category}\n${s.questions.map((q, i) => `${i+1}. ${q}`).join('\n')}`
+                    ).join('\n\n')
+                    navigator.clipboard.writeText(text)
+                  }}>
                     Copy all
                   </button>
                 </div>
-                <InterviewResult text={interviewResult} />
+                <InterviewResult sections={interviewResult} />
               </div>
             )}
           </div>
