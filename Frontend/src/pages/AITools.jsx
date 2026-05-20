@@ -66,9 +66,14 @@ function parseQuestions(text) {
       continue
     }
 
-    const qMatch = trimmed.match(/^\*{0,2}(\d+)\.\s+\*{0,2}(.+?)\*{0,2}$/)
+    const qMatch = trimmed.match(/^\*{0,2}(\d+)\.\s+(.+)$/)
     if (qMatch && current) {
-      current.questions.push(qMatch[2].trim())
+      // Strip any **Category:** prefix Claude might add (e.g. "**Technical:** question")
+      const q = qMatch[2]
+        .replace(/^\*{0,2}[A-Za-z]+:\*{0,2}\s*/,'')
+        .replace(/\*\*/g, '')
+        .trim()
+      if (q) current.questions.push(q)
       continue
     }
 

@@ -59,10 +59,21 @@ def interview_prep(
     message = client.messages.create(
         model="claude-sonnet-4-5",
         max_tokens=1024,
-        system="""You are an expert interview coach. Given a job description,
-        generate 5 to 8 tailored interview questions. Categorise each question
-        as Technical, Behavioural, or Situational. Format your response clearly
-        with the category label before each question.""",
+        system="""You are an expert interview coach. Given a job description, generate 5 to 8 tailored interview questions.
+
+Use EXACTLY this format — section headers with ## and numbered questions only, no category prefix on each question:
+
+## Technical Questions
+1. Question text here
+2. Question text here
+
+## Behavioural Questions
+1. Question text here
+
+## Situational Questions
+1. Question text here
+
+Do not add bold markers, category labels, or any other text to individual questions.""",
         messages=[
             {
                 "role": "user",
