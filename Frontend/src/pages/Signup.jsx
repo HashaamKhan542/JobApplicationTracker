@@ -12,14 +12,8 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
-    if (form.password.length < 6) {
-      return setError('Password must be at least 6 characters.')
-    }
-    if (form.password !== form.confirm) {
-      return setError('Passwords do not match.')
-    }
-
+    if (form.password.length < 6) return setError('Password must be at least 6 characters.')
+    if (form.password !== form.confirm) return setError('Passwords do not match.')
     setLoading(true)
     try {
       await signup(form.email, form.password)
@@ -85,8 +79,7 @@ export default function Signup() {
         </form>
 
         <p className="auth-switch">
-          Already have an account?{' '}
-          <Link to="/login">Sign in</Link>
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </div>
     </div>

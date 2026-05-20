@@ -15,11 +15,7 @@ export default function Login() {
     setLoading(true)
     try {
       const data = await login(form.email, form.password)
-      if (!data.profile_complete) {
-        navigate('/profile-setup')
-      } else {
-        navigate('/applications')
-      }
+      navigate(data.profile_complete ? '/applications' : '/profile-setup')
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please try again.')
     } finally {
@@ -69,8 +65,7 @@ export default function Login() {
         </form>
 
         <p className="auth-switch">
-          Don't have an account?{' '}
-          <Link to="/signup">Create one</Link>
+          Don't have an account? <Link to="/signup">Create one</Link>
         </p>
       </div>
     </div>
