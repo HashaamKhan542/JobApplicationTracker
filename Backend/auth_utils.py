@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "jobtracker-secret-key-change-in-production-2024")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
