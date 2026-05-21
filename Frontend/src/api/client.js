@@ -24,6 +24,9 @@ export const getMe = () => client.get('/auth/me')
 // Profile
 export const getProfile = () => client.get('/profile/me')
 export const setupProfile = (data) => client.post('/profile/setup', data)
+export const updateProfile = (data) => client.post('/profile/setup', data)
+export const changePassword = (current_password, new_password) =>
+  client.post('/auth/change-password', { current_password, new_password })
 
 // Applications
 export const getApplications = () => client.get('/applications/')

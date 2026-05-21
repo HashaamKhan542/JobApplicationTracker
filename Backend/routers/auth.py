@@ -102,6 +102,26 @@ async def google_auth(request: GoogleAuthRequest, db: Session = Depends(get_db))
     return {"access_token": token, "token_type": "bearer", "profile_complete": profile_complete}
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password")
+def change_password(
+    request: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not current_user.password_hash or not verify_password(request.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if len(request.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    current_user.password_hash = hash_password(request.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
+
+
 @router.get("/me")
 def get_me(current_user: User = Depends(get_current_user)):
     return {

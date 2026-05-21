@@ -8,6 +8,7 @@ import AITools from './pages/AITools'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ProfileSetup from './pages/ProfileSetup'
+import Profile from './pages/Profile'
 import './App.css'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
               <Route path="/applications" element={<ProtectedRoute><Applications /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="/ai-tools" element={<ProtectedRoute><AITools /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             </Routes>
           </main>
         </div>

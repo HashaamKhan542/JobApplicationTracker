@@ -38,7 +38,9 @@ function Navbar() {
             </Link>
           </div>
           <div className="navbar-user">
-            <span className="user-email">{user.email}</span>
+            <Link to="/profile" className={isActive('/profile') ? 'nav-link active' : 'nav-link'}>
+              {user.email}
+            </Link>
             <button className="btn-logout" onClick={handleLogout}>Sign out</button>
           </div>
         </>
