@@ -1610,3 +1610,13 @@ body {
   color: #b8a090;
   margin-top: 0.35rem;
 }
+
+.auth-slow-warning {
+  background: #fef9ec;
+  border: 1px solid #f5d97a;
+  color: #92670a;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
